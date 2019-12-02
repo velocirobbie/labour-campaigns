@@ -29,6 +29,7 @@ def read_in_election_results():
 
     ge17 = pd.read_csv('2017 UKPGE electoral data 4.csv',encoding = "ISO-8859-1")
     ge17 = ge17.rename(columns={'ONS Code':'ons_id'})
+    ge17['Election Year'] = 2017
     total_votes = ge17[['ons_id','Valid votes']].groupby('ons_id').sum()
 
     p = {'ukip':'UKIP',
@@ -128,6 +129,34 @@ def score_campaigns_difference(election, prev_election):
     lab_change['change'] = lab_change['election_result'] - lab_change['prev_election']
     return lab_change
 
+def score_campaigns_mrp(election):
+    mrp = pd.read_csv('yougov_mrp_2017.csv')
+    mrp = mrp.rename({"code": "ons_id"}, axis=1)
+    mrp = mrp.set_index('ons_id')
+    mrp['Lab'] = mrp['Lab'].div(100)
+    lab_score = pd.DataFrame([election['lab_pc'], mrp['Lab']], 
+                            index=['election_result', 'yougov_mrp']).T
+    lab_score['difference'] = lab_score['election_result'] - lab_score['yougov_mrp']
+    return lab_score
+
+def score_campaigns_uns(election, prev_election):
+    # Source ge10: https://electionresults.parliament.uk/election/2010-05-06/Results/Location/Country/Great%20Britain
+    # Source ge15: https://electionresults.parliament.uk/election/2015-05-07/Results/Location/Country/Great%20Britain
+    # Source ge17: https://electionresults.parliament.uk/election/2017-06-08/results/Location/Country/Great%20Britain
+    
+    if election['Election Year'][0] == 2010:
+        swing = -0.064
+    elif election['Election Year'][0] == 2015:
+        swing  = 0.015
+    elif election['Election Year'][0] == 2017:
+        swing = 0.098
+
+    lab_score = pd.DataFrame([prev_election['lab_pc'], election['lab_pc']],
+                            index=['prev_election', 'election_result']).T
+    lab_score['uns'] = lab_score['prev_election'].map(lambda result : result + swing)
+    lab_score['difference'] = lab_score['election_result'] - lab_score['uns']
+    return lab_score.sort_index()
+    
 def gather_data(clusters, constituency_scores,ge17):
     data = pd.DataFrame()
 
@@ -159,4 +188,5 @@ def gather_data(clusters, constituency_scores,ge17):
             },index=[0])
             data = data.append(line,ignore_index=True,sort=False)
     return data
+
 
