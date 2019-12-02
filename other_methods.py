@@ -113,7 +113,7 @@ def print_where(where_matrix):
 
 ### cluster and score many times, show table of average scores
 epochs = 10
-print(ensemble_cluster_and_score_constits(epochs, 40, constit_improvement, constit_scores, constit_demog, features))
+#print(ensemble_cluster_and_score_constits(epochs, 40, constit_improvement, constit_scores, constit_demog, features))
 
 
 ### Cluster many times, pick pairs of constits that are most often similar
@@ -129,24 +129,29 @@ print(ensemble_cluster_and_score_constits(epochs, 40, constit_improvement, const
 #    if i < j:
 #        print(constit_demog.iloc[i]['Constituency'],constit_demog.iloc[j]['Constituency'])
 #print(np.where(similarity_matrix == max(similarity_matrix)))
+
 from sklearn import preprocessing
+C = constit_demog.index
 X = constit_demog[features]
 X_scaled = preprocessing.scale(X)
 
 from sklearn.metrics import pairwise_distances
-
 d_matrix = pairwise_distances(X_scaled)
 print(d_matrix)
-#print_where( np.where(d_matrix == np.max(d_matrix)))
+print_where( np.where(d_matrix == np.max(d_matrix)))
 
-av_change  = np.mean(constit_improvement['change'])
-std_change = np.std(constit_improvement['change'])
+constit_improvement = constit_improvement.loc[C]
+scale_change = preprocessing.scale(constit_improvement['change'] )
 
-scale_change = (constit_improvement['change'] - av_change) / std_change
-print(scale_change)
-
-change_matrix = pairwise_distances(scale_change.values.reshape(-1,1))
+change_matrix = scale_change[:,np.newaxis] - scale_change
 print(change_matrix)
+
+significance = np.divide(change_matrix, d_matrix, where=d_matrix!=0)
+scores = np.sum(significance,1)
+
+best = np.argsort(scores)
+for i in range(len(C)):
+    print( scores[best[-i-1]], name_from_onsid( C[best[-i-1]], ge17) )
 
 
 """
