@@ -126,7 +126,7 @@ def cluster_constituencies_kmeans(n_clusters,constit_demog, features):
 def score_campaigns_difference(election, prev_election):
     lab_change = pd.DataFrame([prev_election['lab'],election['lab']],
                                index=['prev_election','election_result']).T
-    lab_change['change'] = lab_change['election_result'] - lab_change['prev_election']
+    lab_change['difference'] = lab_change['election_result'] - lab_change['prev_election']
     return lab_change
 
 def score_campaigns_mrp(election):
