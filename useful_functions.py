@@ -178,9 +178,9 @@ def score_campaigns_mrp(election):
     year = election["Election Year"][0]
     assert year in [2017, 2019]
     if year == 2017:
-        mrp = pd.read_csv("yougov_mrp_2017.csv")
+        mrp = pd.read_csv("data/yougov_mrp_2017.csv")
     elif year == 2019:
-        mrp = pd.read_csv("yougov_mrp_2019.csv")
+        mrp = pd.read_csv("data/yougov_mrp_2019.csv")
 
     mrp = mrp.rename({"code": "ons_id"}, axis=1)
     mrp = mrp.set_index("ons_id")
