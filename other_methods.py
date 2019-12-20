@@ -15,143 +15,173 @@ from scipy import stats
 sns.set(color_codes=True)
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
-pd.set_option('display.width', 1000)
-
+pd.set_option("display.width", 1000)
 
 
 from useful_functions import *
 
-opposition = ['con','ld','ukip','grn','snp']
-parties = ['lab'] + opposition
+opposition = ["con", "ld", "ukip", "grn", "snp"]
+parties = ["lab"] + opposition
 
 ge10, ge15, ge17 = read_in_election_results()
-census           = read_in_census()
+census = read_in_census()
 
-marginals        = calc_marginal_within(0.15,ge17)
+marginals = calc_marginal_within(0.15, ge17)
 
-# Combine latest election with census data 
-ge17_census = ge17.merge(census.drop(columns=['Region','Constituency']),
-                         left_index=True, right_index=True,validate='one_to_one')
+# Combine latest election with census data
+ge17_census = ge17.merge(
+    census.drop(columns=["Region", "Constituency"]),
+    left_index=True,
+    right_index=True,
+    validate="one_to_one",
+)
 
-features = ['c11PopulationDensity',
-                'c11HouseOwned',
-                'c11CarsNone',
-                'c11EthnicityWhite',
-                 'c11Unemployed',
-                 'c11Retired',
-                 'c11FulltimeStudent',
-                 'c11Age65to74',
-                 'c11DeprivedNone']
+features = [
+    "c11PopulationDensity",
+    "c11HouseOwned",
+    "c11CarsNone",
+    "c11EthnicityWhite",
+    "c11Unemployed",
+    "c11Retired",
+    "c11FulltimeStudent",
+    "c11Age65to74",
+    "c11DeprivedNone",
+]
 
-constit_demog = ge17_census[['Constituency']+features]
+constit_demog = ge17_census[["Constituency"] + features]
 constit_demog = constit_demog.dropna()
 
-constit_improvement = score_campaigns_difference(ge17,ge15)
+constit_improvement = score_campaigns_difference(ge17, ge15)
 
 n_constits = len(constit_demog)
 
-constit_scores = pd.DataFrame({'Constituency':constit_demog['Constituency'],
-                               'score_std':np.zeros(n_constits),
-                               'score_dist':np.zeros(n_constits),
-                               'score_posincluster':np.zeros(n_constits),
-                               'score_overall':np.zeros(n_constits) },
-                              index=constit_demog.index)
+constit_scores = pd.DataFrame(
+    {
+        "Constituency": constit_demog["Constituency"],
+        "score_std": np.zeros(n_constits),
+        "score_dist": np.zeros(n_constits),
+        "score_posincluster": np.zeros(n_constits),
+        "score_overall": np.zeros(n_constits),
+    },
+    index=constit_demog.index,
+)
+
 
 def cluster_and_score_constits(n_clusters, metric, scores, constit_demog, features):
-    clusters, cluster_labels = cluster_constituencies_kmeans(n_clusters, constit_demog, features)
+    clusters, cluster_labels = cluster_constituencies_kmeans(
+        n_clusters, constit_demog, features
+    )
     cluster_summary = gather_data(clusters, metric, ge17)
 
     n_constits = len(cluster_summary)
-    cluster_summary = cluster_summary.sort_values(by='sigma_from_mean',ascending=False)
+    cluster_summary = cluster_summary.sort_values(by="sigma_from_mean", ascending=False)
 
-
-    for place,i in enumerate(cluster_summary.index):
-        ons_id = cluster_summary.loc[i,'ons_id']
-        scores.loc[ons_id,'score_std']          += cluster_summary.loc[i,'sigma_from_mean']
-        scores.loc[ons_id,'score_dist']         += cluster_summary.loc[i,'dist_from_mean']
-        scores.loc[ons_id,'score_posincluster'] += cluster_summary.loc[i,'pos_in_cluster']
-        scores.loc[ons_id,'score_overall']      += (n_constits - place)/n_constits
+    for place, i in enumerate(cluster_summary.index):
+        ons_id = cluster_summary.loc[i, "ons_id"]
+        scores.loc[ons_id, "score_std"] += cluster_summary.loc[i, "sigma_from_mean"]
+        scores.loc[ons_id, "score_dist"] += cluster_summary.loc[i, "dist_from_mean"]
+        scores.loc[ons_id, "score_posincluster"] += cluster_summary.loc[
+            i, "pos_in_cluster"
+        ]
+        scores.loc[ons_id, "score_overall"] += (n_constits - place) / n_constits
 
     return scores
 
-def ensemble_cluster_and_score_constits(epochs, n_clusters, metric, scores, constit_demog, features):
+
+def ensemble_cluster_and_score_constits(
+    epochs, n_clusters, metric, scores, constit_demog, features
+):
     for i in range(epochs):
         print(i)
-        scores = cluster_and_score_constits(n_clusters, metric, scores, constit_demog, features)
+        scores = cluster_and_score_constits(
+            n_clusters, metric, scores, constit_demog, features
+        )
 
-    cols = ['score_std','score_dist','score_overall','score_posincluster']
+    cols = ["score_std", "score_dist", "score_overall", "score_posincluster"]
     for col in cols:
         scores[col] /= epochs
-    return scores.sort_values(by=['score_posincluster','score_overall'],ascending=False)
+    return scores.sort_values(
+        by=["score_posincluster", "score_overall"], ascending=False
+    )
+
 
 def build_similarity_matrix(epochs, n_clusters, constit_demog, features):
     n_constits = len(constit_demog)
-    #similarity_matrix = {constit:np.zeros(n_constits) for constit in constit_demog['Constituency']}
-    #similarity_matrix = pd.DataFrame(similarity_matrix,index=constit_demog['Constituency'])
-    similarity_matrix = np.zeros((n_constits,n_constits))
-    lookup = {constit:i for i,constit in enumerate(constit_demog.index)}
+    # similarity_matrix = {constit:np.zeros(n_constits) for constit in constit_demog['Constituency']}
+    # similarity_matrix = pd.DataFrame(similarity_matrix,index=constit_demog['Constituency'])
+    similarity_matrix = np.zeros((n_constits, n_constits))
+    lookup = {constit: i for i, constit in enumerate(constit_demog.index)}
 
     for epoch in range(epochs):
-        clusters, cluster_labels = cluster_constituencies_kmeans(n_clusters, constit_demog, features)
+        clusters, cluster_labels = cluster_constituencies_kmeans(
+            n_clusters, constit_demog, features
+        )
         for cluster in clusters.values():
             n = len(cluster)
-            for i in range(n-1):
-                #constit1 = constit_demog.loc[cluster[i],'Constituency']
+            for i in range(n - 1):
+                # constit1 = constit_demog.loc[cluster[i],'Constituency']
                 constit1 = lookup[cluster[i]]
-                for j in range(i+1,n):
-                    #constit2 = constit_demog.loc[cluster[j],'Constituency']
+                for j in range(i + 1, n):
+                    # constit2 = constit_demog.loc[cluster[j],'Constituency']
                     constit2 = lookup[cluster[j]]
-                    similarity_matrix[constit1,constit2] += 1
-                    similarity_matrix[constit2,constit1] += 1
+                    similarity_matrix[constit1, constit2] += 1
+                    similarity_matrix[constit2, constit1] += 1
     return similarity_matrix
+
 
 def print_where(where_matrix):
     where_matrix = np.array(where_matrix)
-    for i,j in where_matrix.T:
-            print(constit_demog.iloc[i]['Constituency'],',',constit_demog.iloc[j]['Constituency'])
+    for i, j in where_matrix.T:
+        print(
+            constit_demog.iloc[i]["Constituency"],
+            ",",
+            constit_demog.iloc[j]["Constituency"],
+        )
 
 
 ### cluster and score many times, show table of average scores
 epochs = 10
-#print(ensemble_cluster_and_score_constits(epochs, 40, constit_improvement, constit_scores, constit_demog, features))
+# print(ensemble_cluster_and_score_constits(epochs, 40, constit_improvement, constit_scores, constit_demog, features))
 
 
 ### Cluster many times, pick pairs of constits that are most often similar
-#epochs = 100
-#n_clusters = 250
-#similarity_matrix = build_similarity_matrix(epochs, n_clusters, constit_demog, features)
+# epochs = 100
+# n_clusters = 250
+# similarity_matrix = build_similarity_matrix(epochs, n_clusters, constit_demog, features)
 
-#print(similarity_matrix)
-#best = np.max(similarity_matrix)
-#where = np.array(np.where(similarity_matrix==best))
+# print(similarity_matrix)
+# best = np.max(similarity_matrix)
+# where = np.array(np.where(similarity_matrix==best))
 
-#for i,j in where.T:
+# for i,j in where.T:
 #    if i < j:
 #        print(constit_demog.iloc[i]['Constituency'],constit_demog.iloc[j]['Constituency'])
-#print(np.where(similarity_matrix == max(similarity_matrix)))
+# print(np.where(similarity_matrix == max(similarity_matrix)))
 
 from sklearn import preprocessing
+
 C = constit_demog.index
 X = constit_demog[features]
 X_scaled = preprocessing.scale(X)
 
 from sklearn.metrics import pairwise_distances
+
 d_matrix = pairwise_distances(X_scaled)
 print(d_matrix)
-print_where( np.where(d_matrix == np.max(d_matrix)))
+print_where(np.where(d_matrix == np.max(d_matrix)))
 
 constit_improvement = constit_improvement.loc[C]
-scale_change = preprocessing.scale(constit_improvement['change'] )
+scale_change = preprocessing.scale(constit_improvement["change"])
 
-change_matrix = scale_change[:,np.newaxis] - scale_change
+change_matrix = scale_change[:, np.newaxis] - scale_change
 print(change_matrix)
 
-significance = np.divide(change_matrix, d_matrix, where=d_matrix!=0)
-scores = np.sum(significance,1)
+significance = np.divide(change_matrix, d_matrix, where=d_matrix != 0)
+scores = np.sum(significance, 1)
 
 best = np.argsort(scores)
 for i in range(len(C)):
-    print( scores[best[-i-1]], name_from_onsid( C[best[-i-1]], ge17) )
+    print(scores[best[-i - 1]], name_from_onsid(C[best[-i - 1]], ge17))
 
 
 """
