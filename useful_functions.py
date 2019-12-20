@@ -10,17 +10,15 @@ pd.set_option("display.max_columns", None)
 
 
 def read_in_election_results():
-    ge15 = readge15()
-    ge10 = readge10()
-    ge10.index = ge15["ons_id"]
-
-    ge17 = readge17()
-    ge19 = readge19()
+    ge10 = readge10("data/general_election-uk-2010-results.csv")
+    ge15 = readge15("data/general_election-uk-2015-results.csv")
+    ge17 = readge17("data/2017 UKPGE electoral data 4.csv")
+    ge19 = readge19("data/ge2019.csv")
     return ge10, ge15, ge17, ge19
 
 
-def readge15():
-    ge15 = pd.read_csv("data/general_election-uk-2015-results.csv")
+def readge15(datafile):
+    ge15 = pd.read_csv(datafile)
     ge15 = ge15.rename({"Constituency ID": "ons_id"}, axis=1)
     ge15 = ge15[ge15["Region"] != "Northern Ireland"]
     ge15.index = ge15["ons_id"]
@@ -28,15 +26,15 @@ def readge15():
     return ge15
 
 
-def readge10():
-    ge10 = pd.read_csv("data/general_election-uk-2010-results.csv")
+def readge10(datafile):
+    ge10 = pd.read_csv(datafile)
     ge10 = ge10.rename({"Constituency ID": "ons_id"}, axis=1)
     ge10 = ge10[ge10["Region"] != "Northern Ireland"]
     return ge10
 
 
-def readge17():
-    ge17 = pd.read_csv("data/2017 UKPGE electoral data 4.csv", encoding="ISO-8859-1")
+def readge17(datafile):
+    ge17 = pd.read_csv(datafile, encoding="ISO-8859-1")
     ge17 = ge17.rename(columns={"ONS Code": "ons_id"})
     ge17["Election Year"] = 2017
     total_votes = ge17[["ons_id", "Valid votes"]].groupby("ons_id").sum()
@@ -68,8 +66,8 @@ def readge17():
     return ge17
 
 
-def readge19():
-    ge19 = pd.read_csv("data/ge2019.csv", encoding="ISO-8859-1")
+def readge19(datafile):
+    ge19 = pd.read_csv(datafile, encoding="ISO-8859-1")
 
     ge19 = ge19.rename({"ONSConstID": "ons_id"}, axis=1)
     ge19 = ge19.dropna(subset=["ons_id"])
