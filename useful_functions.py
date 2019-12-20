@@ -1,14 +1,8 @@
 #!/usr/bin/env python
-# coding: utf-8
 
-# In[1]:
-
-import matplotlib
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
-from scipy import stats
 
 sns.set(color_codes=True)
 pd.set_option("display.max_rows", None)
@@ -103,7 +97,8 @@ def name_from_onsid(onsid, ge17):
 
 
 # ### Estimate marginal seats
-# If labour were won by a certain percentage, or were within a certain percentage of winning the seat (margin = 0.15). Rough estimate of seats of interest
+# If labour were won by a certain percentage, or were within a certain percentage 
+# of winning the seat (margin = 0.15). Rough estimate of seats of interest
 #
 # This is so we can identify constituencies that actually had a campaign run in them.
 
@@ -154,15 +149,9 @@ def get_clusters(names, labels):
 
 
 def cluster_constituencies_kmeans(n_clusters, constit_demog, features):
-    # i don't think this is neccesary
-    from sklearn import preprocessing
-
     X = constit_demog[features]
-    X_scaled = preprocessing.scale(X)
 
     from sklearn.cluster import KMeans
-
-    # Ive declared the random_state just to make sure we can compare things
     kmeans = KMeans(n_clusters=n_clusters)
     kmeans.fit(X)
 
@@ -193,7 +182,8 @@ def score_campaigns_mrp(election):
     mrp = mrp.set_index("ons_id")
     mrp["Lab"] = mrp["Lab"].div(100)
     lab_score = pd.DataFrame(
-        [election["lab_pc"], mrp["Lab"]], index=["election_result", "yougov_mrp"]
+        [election["lab_pc"], mrp["Lab"]], 
+        index=["election_result", "yougov_mrp"]
     ).T
     lab_score["difference"] = lab_score["election_result"] - lab_score["yougov_mrp"]
     return lab_score
