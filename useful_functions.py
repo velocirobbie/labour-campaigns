@@ -10,19 +10,33 @@ pd.set_option("display.max_columns", None)
 
 
 def read_in_election_results():
-    ge15 = pd.read_csv("general_election-uk-2015-results.csv")
+    ge15 = readge15()
+    ge10 = readge10()
+    ge10.index = ge15["ons_id"]
+
+    ge17 = readge17()
+    ge19 = readge19()
+    return ge10, ge15, ge17, ge19
+
+
+def readge15():
+    ge15 = pd.read_csv("data/general_election-uk-2015-results.csv")
     ge15 = ge15.rename({"Constituency ID": "ons_id"}, axis=1)
     ge15 = ge15[ge15["Region"] != "Northern Ireland"]
     ge15.index = ge15["ons_id"]
+    ge15 = ge15.drop(columns="ons_id")
+    return ge15
 
-    ge10 = pd.read_csv("general_election-uk-2010-results.csv")
+
+def readge10():
+    ge10 = pd.read_csv("data/general_election-uk-2010-results.csv")
     ge10 = ge10.rename({"Constituency ID": "ons_id"}, axis=1)
     ge10 = ge10[ge10["Region"] != "Northern Ireland"]
-    ge10.index = ge15["ons_id"]
+    return ge10
 
-    ge15 = ge15.drop(columns="ons_id")
 
-    ge17 = pd.read_csv("2017 UKPGE electoral data 4.csv", encoding="ISO-8859-1")
+def readge17():
+    ge17 = pd.read_csv("data/2017 UKPGE electoral data 4.csv", encoding="ISO-8859-1")
     ge17 = ge17.rename(columns={"ONS Code": "ons_id"})
     ge17["Election Year"] = 2017
     total_votes = ge17[["ons_id", "Valid votes"]].groupby("ons_id").sum()
@@ -51,8 +65,11 @@ def read_in_election_results():
     ge17.index = ge17["ons_id"]
     ge17 = ge17.drop(columns="ons_id")
     ge17["winner"] = ge17[p.keys()].T.apply(lambda x: x.nlargest(1).idxmin())
+    return ge17
 
-    ge19 = pd.read_csv("ge2019.csv", encoding="ISO-8859-1")
+
+def readge19():
+    ge19 = pd.read_csv("data/ge2019.csv", encoding="ISO-8859-1")
 
     ge19 = ge19.rename({"ONSConstID": "ons_id"}, axis=1)
     ge19 = ge19.dropna(subset=["ons_id"])
@@ -83,26 +100,15 @@ def read_in_election_results():
 
     ge19["Election Year"] = 2019
     ge19["winner"] = ge19[parties.keys()].T.apply(lambda x: x.nlargest(1).idxmin())
+    return ge19
 
-    return ge10, ge15, ge17, ge19
 
-
-# some useful functions
 def onsid_from_name(name, ge17):
     return ge17.index[ge17["Constituency"] == name][0]
 
 
 def name_from_onsid(onsid, ge17):
     return ge17["Constituency"].loc[onsid]
-
-
-# ### Estimate marginal seats
-# If labour were won by a certain percentage, or were within a certain percentage 
-# of winning the seat (margin = 0.15). Rough estimate of seats of interest
-#
-# This is so we can identify constituencies that actually had a campaign run in them.
-
-# In[5]:
 
 
 def calc_marginal_within(margin, ge17):
@@ -182,7 +188,7 @@ def score_campaigns_mrp(election):
     mrp = mrp.set_index("ons_id")
     mrp["Lab"] = mrp["Lab"].div(100)
     lab_score = pd.DataFrame(
-        [election["lab_pc"], mrp["Lab"]], 
+        [election["lab_pc"], mrp["Lab"]],
         index=["election_result", "yougov_mrp"]
     ).T
     lab_score["difference"] = lab_score["election_result"] - lab_score["yougov_mrp"]
