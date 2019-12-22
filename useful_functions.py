@@ -14,7 +14,7 @@ def read_in_election_results():
     ge15 = readge15("data/general_election-uk-2015-results.csv")
     ge17 = readge17("data/2017 UKPGE electoral data 4.csv")
     ge19 = readge19("data/ge2019.csv")
-    return ge10, ge15, ge17, ge19
+    return {10: ge10, 15: ge15, 17: ge17, 19: ge19}
 
 
 def readge15(datafile):
@@ -136,7 +136,7 @@ def calc_marginal_within(margin, ge17):
 
 
 def read_in_census():
-    census = pd.read_csv("census_file.csv")
+    census = pd.read_csv("data/census_file.csv")
     census.index = census["ons_id"]
     census = census.drop(columns="ons_id")
     return census
