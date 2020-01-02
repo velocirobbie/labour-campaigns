@@ -23,13 +23,17 @@ from useful_functions import *
 opposition = ["con", "ld", "ukip", "grn", "snp"]
 parties = ["lab"] + opposition
 
-ge10, ge15, ge17 = read_in_election_results()
+year = 17
+compare_year = 15
+
+election_results = read_in_election_results()
+
 census = read_in_census()
 
-marginals = calc_marginal_within(0.15, ge17)
+#marginals = calc_marginal_within(0.15, ge17)
 
 # Combine latest election with census data
-ge17_census = ge17.merge(
+ge17_census = election_results[year].merge(
     census.drop(columns=["Region", "Constituency"]),
     left_index=True,
     right_index=True,
@@ -51,7 +55,8 @@ features = [
 constit_demog = ge17_census[["Constituency"] + features]
 constit_demog = constit_demog.dropna()
 
-constit_improvement = score_campaigns_difference(ge17, ge15)
+constit_improvement = score_campaigns_difference(election_results[year],
+                                                 election_results[compare_year])
 
 n_constits = len(constit_demog)
 
@@ -71,7 +76,7 @@ def cluster_and_score_constits(n_clusters, metric, scores, constit_demog, featur
     clusters, cluster_labels = cluster_constituencies_kmeans(
         n_clusters, constit_demog, features
     )
-    cluster_summary = gather_data(clusters, metric, ge17)
+    cluster_summary = gather_data(clusters, metric, election_results[year])
 
     n_constits = len(cluster_summary)
     cluster_summary = cluster_summary.sort_values(by="sigma_from_mean", ascending=False)
@@ -171,7 +176,7 @@ print(d_matrix)
 print_where(np.where(d_matrix == np.max(d_matrix)))
 
 constit_improvement = constit_improvement.loc[C]
-scale_change = preprocessing.scale(constit_improvement["change"])
+scale_change = preprocessing.scale(constit_improvement["difference"])
 
 change_matrix = scale_change[:, np.newaxis] - scale_change
 print(change_matrix)
@@ -181,7 +186,7 @@ scores = np.sum(significance, 1)
 
 best = np.argsort(scores)
 for i in range(len(C)):
-    print(scores[best[-i - 1]], name_from_onsid(C[best[-i - 1]], ge17))
+    print(scores[best[-i - 1]], name_from_onsid(C[best[-i - 1]], election_results[year]))
 
 
 """
@@ -254,7 +259,7 @@ map_df.index = census.index
 def highlight_constits(map_df,constits):
     ids = []
     for constit in constits:
-        ids += [ onsid_from_name(constit,ge17) ]
+        ids += [ onsid_from_name(constit,election_results[year]) ]
     highlight_map = map_df
     highlight_map['color'] = 0.9
     L = len(ids)
@@ -285,12 +290,12 @@ ax.set_axis_off()
 fig, ax = plt.subplots(len(constits),2,figsize=(10,5*len(constits)))
 
 for i,constit in enumerate(constits):
-    onsid = onsid_from_name(constit,ge17)
+    onsid = onsid_from_name(constit,election_results[year])
     #plt.figure(i)
     
-    ge15[parties].loc[onsid].plot.bar(color=['r','b','y','m','g','y'],title=constit+'2015',ax=ax[i,0])
+    election_results[compare_year][parties].loc[onsid].plot.bar(color=['r','b','y','m','g','y'],title=constit+'2015',ax=ax[i,0])
     
-    ge17[parties].loc[onsid].plot.bar(color=['r','b','y','m','g','y'],title=constit+'2017',ax=ax[i,1])
+    election_results[year][parties].loc[onsid].plot.bar(color=['r','b','y','m','g','y'],title=constit+'2017',ax=ax[i,1])
     #sns.distplot(cluster_summary[cluster_summary['cluster']==i]['change'])
 
 
