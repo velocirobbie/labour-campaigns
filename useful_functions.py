@@ -225,7 +225,7 @@ def gather_data(clusters, constituency_scores, ge17):
         constituencies = clusters[cluster]
         swings = []
         for constit in constituencies:
-            swings += [constituency_scores["change"].loc[constit]]
+            swings += [constituency_scores["difference"].loc[constit]]
         sorted_swings = np.sort(swings)
 
         for constit, swing in zip(constituencies, swings):
