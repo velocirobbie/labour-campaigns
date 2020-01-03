@@ -23,8 +23,8 @@ from useful_functions import *
 opposition = ["con", "ld", "ukip", "grn", "snp"]
 parties = ["lab"] + opposition
 
-year = 17
-compare_year = 15
+year = 19
+compare_year = 17
 
 election_results = read_in_election_results()
 
@@ -55,8 +55,8 @@ features = [
 constit_demog = ge17_census[["Constituency"] + features]
 constit_demog = constit_demog.dropna()
 
-constit_improvement = score_campaigns_difference(election_results[year],
-                                                 election_results[compare_year])
+constit_improvement = score_campaigns_uns(election_results[year],
+                                          election_results[compare_year])
 
 n_constits = len(constit_demog)
 
@@ -146,7 +146,7 @@ def print_where(where_matrix):
 
 ### cluster and score many times, show table of average scores
 epochs = 10
-# print(ensemble_cluster_and_score_constits(epochs, 40, constit_improvement, constit_scores, constit_demog, features))
+print(ensemble_cluster_and_score_constits(epochs, 40, constit_improvement, constit_scores, constit_demog, features))
 
 
 ### Cluster many times, pick pairs of constits that are most often similar
