@@ -38,7 +38,6 @@ def readge17(datafile):
     ge17 = ge17.rename(columns={"ONS Code": "ons_id"})
     ge17["Election Year"] = 2017
     total_votes = ge17[["ons_id", "Valid votes"]].groupby("ons_id").sum()
-
     p = {
         "ukip": "UKIP",
         "ld": "Liberal Democrats",
@@ -46,7 +45,8 @@ def readge17(datafile):
         "con": "Conservative",
         "snp": "SNP",
         "grn": "Green Party",
-    }
+        "pc": "Plaid Cymru"
+        }
 
     ge17 = ge17.merge(
         total_votes.rename(columns={"Valid votes": "total_votes"}), on="ons_id"
@@ -63,6 +63,7 @@ def readge17(datafile):
     ge17.index = ge17["ons_id"]
     ge17 = ge17.drop(columns="ons_id")
     ge17["winner"] = ge17[p.keys()].T.apply(lambda x: x.nlargest(1).idxmin())
+
     return ge17
 
 
@@ -80,8 +81,7 @@ def readge19(datafile):
         "grn": "GRN",
         "snp": "SNP",
         "pc": "PC",
-        "ukip": "UKIP",
-        "bxp": "BXP",
+        "ukip": "BXP",
         "other": "OTHER",
     }
 
