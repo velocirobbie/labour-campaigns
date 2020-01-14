@@ -10,7 +10,7 @@ pd.set_option("display.max_columns", None)
 
 
 def read_in_election_results():
-    ge10 = readge10("data/010.csv")
+    ge10 = readge10("data/ge2010.csv")
     ge15 = readge15("data/ge2015.csv")
     ge17 = readge17("data/ge2017.csv")
     ge19 = readge19("data/ge2019.csv")
