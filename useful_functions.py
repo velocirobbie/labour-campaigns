@@ -10,9 +10,9 @@ pd.set_option("display.max_columns", None)
 
 
 def read_in_election_results():
-    ge10 = readge10("data/general_election-uk-2010-results.csv")
-    ge15 = readge15("data/general_election-uk-2015-results.csv")
-    ge17 = readge17("data/2017 UKPGE electoral data 4.csv")
+    ge10 = readge10("data/010.csv")
+    ge15 = readge15("data/ge2015.csv")
+    ge17 = readge17("data/ge2017.csv")
     ge19 = readge19("data/ge2019.csv")
     return {10: ge10, 15: ge15, 17: ge17, 19: ge19}
 
