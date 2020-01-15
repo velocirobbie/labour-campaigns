@@ -1,3 +1,4 @@
+import pandas as pd
 
 def score_campaigns_difference(election, prev_election):
     lab_change = pd.DataFrame(
