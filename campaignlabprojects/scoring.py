@@ -35,23 +35,12 @@ def score_campaigns_uns(election, prev_election):
     # Source ge15: https://electionresults.parliament.uk/election/2015-05-07/Results/Location/Country/Great%20Britain
     # Source ge17: https://electionresults.parliament.uk/election/2017-06-08/results/Location/Country/Great%20Britain
 
-    if election["Election Year"][0] == 2010:
-        swing = -0.064
-    elif election["Election Year"][0] == 2015:
-        swing = 0.015
-    elif election["Election Year"][0] == 2017:
-        swing = 0.098
-    elif election["Election Year"][0] == 2019:
-        swing = -0.079
-    else:
-        raise Exception("No data for that year")
-
     lab_score = pd.DataFrame(
         [prev_election["lab_pc"], election["lab_pc"]],
         index=["prev_election", "election_result"],
     ).T
-    lab_score["uns"] = lab_score["prev_election"].map(lambda result: result + swing)
-    lab_score["difference"] = lab_score["election_result"] - lab_score["uns"]
+    #lab_score["uns"] = lab_score["prev_election"].map(lambda result: result + swing)
+    lab_score["difference"] = lab_score["election_result"] - lab_score["prev_election"]
     return lab_score.sort_index()
 
 
